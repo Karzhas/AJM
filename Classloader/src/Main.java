@@ -1,7 +1,4 @@
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -26,10 +23,16 @@ class CustomClassLoader extends ClassLoader {
         if (clazz != null) {
             return clazz;
         }
-        File file = new File("D:\\WORK\\EPAM\\AJM\\Classloader\\External Source\\" + name + ".class");
+        File file = new File("External Source\\" + name + ".class");
         if (!file.exists())
             return findSystemClass(name);
-        clazz = getClass(name);
+        try {
+            byte[] classBytes= loadFileAsBytes(file);
+            clazz = defineClass(name, classBytes, 0,
+                    classBytes.length);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         if (clazz != null)
             classesHash.put(name, clazz);
         return clazz;
@@ -38,19 +41,19 @@ class CustomClassLoader extends ClassLoader {
 
 
 
-    private Class<?> getClass(String name){
-
-        byte[] byteArr = null;
+    private byte[] loadFileAsBytes(File file)
+            throws IOException{
+        byte[] result = new byte[(int)file.length()];
+        FileInputStream f = new FileInputStream(file);
         try {
-
-            byteArr = Files.readAllBytes(Paths.get("D:\\WORK\\EPAM\\AJM\\Classloader\\External Source\\" + name + ".class"));
-
-            Class<?> c = defineClass(name, byteArr, 0, byteArr.length);
-            resolveClass(c);
-            return c;
-        } catch (IOException e) {
-            return null;
+            f.read(result,0,result.length);
+        } finally {
+            try {
+                f.close();
+            } catch (Exception e) {
+            }
         }
+        return result;
     }
 }
 
@@ -66,6 +69,7 @@ class TestClass{
 public class Main {
 
     public static void main(String[] args) throws Exception {
+
         // Load class dynamically which is not in ClassPath (from DB, external memory, WEB)
         CustomClassLoader dynamicClassLoader = new CustomClassLoader();
         boolean refreshClass = true;
