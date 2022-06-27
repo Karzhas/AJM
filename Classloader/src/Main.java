@@ -5,100 +5,89 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 class CustomClassLoader extends ClassLoader {
 
-    @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        if (name.startsWith("Test")) {
-            return getClass(name);
-        }
-        return super.findClass(name);
+    private Map classesHash = new HashMap();
+
+    public CustomClassLoader invalidate(){
+        return new CustomClassLoader();
     }
+
+    public void clearCache(){
+        classesHash.clear();
+    }
+
+    @Override
+    public Class<?> loadClass(String name) throws ClassNotFoundException {
+        Class clazz = (Class) classesHash.get(name);
+        if (clazz != null) {
+            return clazz;
+        }
+        File file = new File("D:\\WORK\\EPAM\\AJM\\Classloader\\External Source\\" + name + ".class");
+        if (!file.exists())
+            return findSystemClass(name);
+        clazz = getClass(name);
+        if (clazz != null)
+            classesHash.put(name, clazz);
+        return clazz;
+
+    }
+
+
 
     private Class<?> getClass(String name){
 
         byte[] byteArr = null;
         try {
-            byteArr = Files.readAllBytes(Paths.get("D:\\Desktop\\TestClass.class"));
+
+            byteArr = Files.readAllBytes(Paths.get("D:\\WORK\\EPAM\\AJM\\Classloader\\External Source\\" + name + ".class"));
+
             Class<?> c = defineClass(name, byteArr, 0, byteArr.length);
             resolveClass(c);
             return c;
         } catch (IOException e) {
-            e.printStackTrace();
             return null;
         }
     }
 }
 
-class DynamicClassLoader extends ClassLoader{
+class TestClass{
+
     @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        if (name.startsWith("Test")) {
-            return getClass(name);
-        }
-        return super.findClass(name);
-    }
-
-    private Class<?> getClass(String name){
-
-        byte[] byteArr = null;
-        try {
-            byteArr = Files.readAllBytes(Paths.get("D:\\Desktop\\TestClass.class"));
-            Class<?> c = defineClass(name, byteArr, 0, byteArr.length);
-            resolveClass(c);
-            return c;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    public String toString() {
+        return "TestClass FROM CLASSPATH";
     }
 }
+
 
 public class Main {
 
-    public static void main(String[] args) {
-        // Load class from external class which is not in ClassPath (from DB, external memory, WEB)
-        loadClassNotFromClassPathByName("TestClass");
-        // Load class from dynamically without restarting program
-        loadClassDynamically();
-    }
+    public static void main(String[] args) throws Exception {
+        // Load class dynamically which is not in ClassPath (from DB, external memory, WEB)
+        CustomClassLoader dynamicClassLoader = new CustomClassLoader();
+        boolean refreshClass = true;
 
-    private static void loadClassDynamically() {
         while(true){
-            DynamicClassLoader dynamicClassLoader = new DynamicClassLoader();
-            try {
-                Class<?> clazz = Class.forName("TestClass", true, dynamicClassLoader);
-                Object object = clazz.getDeclaredConstructor().newInstance();
-                System.out.println(object);
-            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
-                throw new RuntimeException(e);
+            if(refreshClass) {
+                dynamicClassLoader = dynamicClassLoader.invalidate();
+//                dynamicClassLoader.clearCache();
             }
+            Class clazz =  Class.forName("TestClass", true, dynamicClassLoader);
+//             Class clazz =  dynamicClassLoader.loadClass("TestClass");
+            Object  object =  clazz.getDeclaredConstructor().newInstance();
 
-            try {
-                Thread.sleep(3*1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            System.out.println(object);
+
+            Thread.sleep(2*1000);
+
 
         }
     }
 
-    private static void loadClassNotFromClassPathByName(String testClass) {
-        CustomClassLoader customClassLoader = new CustomClassLoader();
-        try {
-            Class<?> clazz = customClassLoader.loadClass("TestClass");
-            //Class<?> clazz = Class.forName("TestClass", true, customClassLoader);
-            Object instance = clazz.getDeclaredConstructor().newInstance();
 
-            clazz.getMethod("print").invoke(instance);
-            System.out.println(instance);
-        } catch (ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException |
-                 NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
 
 
