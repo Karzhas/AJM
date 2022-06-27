@@ -6,5 +6,7 @@ Dynamicaly compile source code of a class and defineClass with bytes of a .class
 
 - #### Inner classes: classification, differences, best practice.
 https://docs.oracle.com/javase/tutorial/java/javaOO/nested.html 
+
 https://docs.oracle.com/javase/tutorial/java/javaOO/localclasses.html 
+
 https://docs.oracle.com/javase/tutorial/java/javaOO/anonymousclasses.html 
