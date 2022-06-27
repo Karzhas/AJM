@@ -1,6 +1,6 @@
 # Usage of Static and non static Blocks in a Class
 
-- #### Why static and non static blocks were introduced in Java?
+ ## Why static and non static blocks were introduced in Java?
 
 **Static**
 
@@ -13,7 +13,7 @@
 - Can be used in anonymous classes
 
 
-- #### Life cycle of static and non static blocks
+ ## Life cycle of static and non static blocks
 **Static**
 1. A static block executes at class loading time.
 2. All static variables can be accessed freely
